@@ -700,7 +700,8 @@ LIMIT_MAKER
 				};
 				apiRequest(base+'v1/userDataStream', function(error, response) {
 					options.listenKey = response.listenKey;
-					setInterval(function() { // keepalive
+					if (options.userDataStreamInterval) clearInterval(options.userDataStreamInterval);
+					options.userDataStreamInterval = setInterval(function() { // keepalive
 						try {
 							apiRequest(base+'v1/userDataStream?listenKey='+options.listenKey, false, 'PUT');
 						} catch ( error ) {
