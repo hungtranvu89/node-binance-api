@@ -11,11 +11,14 @@ module.exports = function() {
 	const WebSocket = require('ws');
 	const request = require('request');
 	const crypto = require('crypto');
+	const Nanotimer = require('nanotimer');
 	const base = 'https://api.binance.com/api/';
 	const wapi = 'https://api.binance.com/wapi/';
 	const stream = 'wss://stream.binance.com:9443/ws/';
 	const userAgent = 'Mozilla/4.0 (compatible; Node Binance API)';
 	const contentType = 'application/x-www-form-urlencoded';
+	const userDataStreamTimer = new Nanotimer();
+	const userDataStreamKeepAlive = `${60 * 30}s`; // 30 minute keepalive
 	let subscriptions = {};
 	let messageQueue = {};
 	let depthCache = {};
@@ -700,14 +703,14 @@ LIMIT_MAKER
 				};
 				apiRequest(base+'v1/userDataStream', function(error, response) {
 					options.listenKey = response.listenKey;
-					if (options.userDataStreamInterval) clearInterval(options.userDataStreamInterval);
-					options.userDataStreamInterval = setInterval(function() { // keepalive
+					userDataStreamTimer.clearInterval();
+					userDataStreamTimer.setInterval(function(listenKey) { // keepalive
 						try {
-							apiRequest(base+'v1/userDataStream?listenKey='+options.listenKey, false, 'PUT');
+							apiRequest(base+'v1/userDataStream?listenKey='+listenKey, false, 'PUT');
 						} catch ( error ) {
 							//error.message
 						}
-					}, 60 * 30 * 1000); // 30 minute keepalive
+					}, [options.listenKey], userDataStreamKeepAlive); // 30 minute keepalive
 					options.balance_callback = callback;
 					options.execution_callback = execution_callback;
 					subscribe(options.listenKey, userDataHandler, reconnect);

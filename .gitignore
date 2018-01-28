@@ -39,3 +39,5 @@ Thumbs.db
 # Secrets #
 ###########
 .secret
+
+**/node_modules
